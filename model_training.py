@@ -9,7 +9,7 @@ class Env:
         self.circle_turn = True
         self.game_end = False
         self.moves_amount = 0
-        self.winner = 0 # 0=X, 1=O, 2=nobody
+        self.winner = 0 # 0=nobody, 1=O, 2=X
 
     def get_state(self):
         return tuple(self.states)
@@ -24,9 +24,6 @@ class Env:
 
     def now_player(self):
         return 1 if self.circle_turn else 2
-
-    # def isEnd(self):
-    #     return self.game_end
     
     def move(self, position):
         if self.circle_turn:
@@ -95,6 +92,8 @@ class Agent:
             self.q_table[state+(action,)] = curr_q + self.lr*(reward + self.gamma*max_next_q - curr_q)
         else:
             self.q_table[state+(action,)] = curr_q + self.lr*(reward - curr_q)
+        
+        # extend replay buffer
         # if self.mb_size < len(self.replay_buffer): return
         # for i in np.random.choice(len(self.replay_buffer), self.mb_size, replace=False):
         #     state, action, reward, next_state = self.replay_buffer[i]
@@ -135,14 +134,6 @@ class Agent:
             np.save(f,self.q_table)
             print("Done!")
 
-            
-def print_state(player, game_state):
-    # os.system('cls' if os.name == 'nt' else 'clear')
-    # for i in range(0,3):
-    #     print(f"{player[game_state[3*i]]:>2}{player[game_state[3*i+1]]:>2}{player[game_state[3*i+2]]:>2}")
-    # print("\n")
-    pass
-
 def main():
     #Q-learning args
     n_episode = 10000
@@ -153,8 +144,6 @@ def main():
     s_dim = 9
     a_dim = 9
     total_rewards = np.zeros(n_episode+1, dtype=np.float32) #紀錄所有episode的reward變化
-    buffer_size = 512
-    max_performance = 0
 
     first_step = True
     env = Env()
@@ -166,13 +155,10 @@ def main():
         p1_state = env.reset()
 
         while True:
-            print_state(player,env.get_state())
-            #目前只訓練ai玩先手(圈圈部分)
             #agent turn
             legal_action = env.legal_actions()
             p1_action = p1.choose_action(legal_action,eps,p1_state)
             p2_next_state, reward, done = env.move(p1_action)
-            print_state(player,env.get_state())
             if done:
                 break
 
@@ -186,40 +172,16 @@ def main():
             legal_action = env.legal_actions()
             p2_action = p2.choose_action(legal_action,eps,p2_state)
             p1_next_state, reward, done = env.move(p2_action)
-            print_state(player,env.get_state())
             if done:
                 break
 
-                # input_legal = False        
-                # while not input_legal:
-                #     player_action = input(f"{player[env.now_player()]} 的回合，請輸入數字1~9(左上至右下編號)：")
-                #     if not player_action.isnumeric():
-                #         print("格式錯誤，請輸入數字！")
-                #         continue
-                #     player_action = int(player_action)-1
-                #     if player_action<0 or player_action>8:
-                #         print("超過數字範圍，請輸入正確數字！")
-                #     elif not env.check_move_legal(player_action):
-                #         print("這格已經被畫過了，請選擇其他格！")
-                #     else:
-                #         input_legal = True
-                #         env.move(player_action)
-
             legal_action = env.legal_actions()
-            # p1.put_in_buffer(state,action,reward,next_state)
             p1.update_qtable(p1_state,p1_action,reward,p1_next_state,legal_action)
             p1_state = p1_next_state
 
-        # p1.put_in_buffer(state,action,reward,None)
         p1.update_qtable(p1_state,p1_action,reward,None,None)
         p2.update_qtable(p2_state,p2_action,reward*-1,None,None)
         total_rewards[i_episode] = reward
-
-                # winner = env.get_winner()
-                # if winner == 0:
-                #     print("平手，遊戲結束！")
-                # else:
-                #     print(f"贏家是{player[winner]}，遊戲結束！")
         
         eps = np.exp(-0.2 - 4.0*i_episode / n_episode)
 
@@ -227,12 +189,7 @@ def main():
             print("[{:5d}/{:5d}] total_reward = {:.3f}, avg_total_reward = {:.3f}, epsilon = {:.3f}".format(
                 i_episode, n_episode,reward, total_rewards[:i_episode+1].mean(), eps
             ))
-        # window_size = 50
-        # left = max(0,i_episode-window_size)
-        # right = min(i_episode+window_size,len(total_rewards))
-        # if total_rewards[left:right].mean() > max_performance:
-        #     p1.save_model("1")
-        #     max_performance = total_rewards[left:right].mean()
+            
     p1.save_model("-p1")
     p2.save_model("-p2")
 

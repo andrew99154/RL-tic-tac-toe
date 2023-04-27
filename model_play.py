@@ -1,8 +1,5 @@
 import os
 import numpy as np
-from collections import deque
-import random
-from matplotlib import pyplot as plt
 class Env:
     def __init__(self) -> None:
         self.states = [0]*9
