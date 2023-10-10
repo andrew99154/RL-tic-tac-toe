@@ -1,5 +1,4 @@
 # Tic Tac Toe 井字遊戲
-歡迎挑戰model找弱點，期待可以看到更強的model，歡迎發PR，tks!
 ## 專案結構
 model_play：執行檔案此開始遊戲
 
